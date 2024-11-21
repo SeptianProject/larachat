@@ -55,7 +55,7 @@
 
                 <!-- Chat Container -->
                 <div class="flex-1 overflow-y-auto p-4 space-y-4" id="chatResponse">
-                    <!-- Chat messages will be dynamically added here -->
+                    <!-- Chat messages response -->
                 </div>
 
                 <!-- Input Area -->
@@ -66,6 +66,10 @@
                     <button id="sendMessage"
                         class="mt-2 w-full bg-primary text-white py-2 rounded hover:bg-opacity-90 transition">
                         Kirim Pesan
+                    </button>
+                    <button id="clearChatHistory"
+                        class="mt-2 w-full bg-red-500 text-white py-2 rounded hover:bg-red-600 transition">
+                        Hapus Riwayat Chat
                     </button>
                 </div>
             </div>
@@ -125,6 +129,29 @@
                         '<p class="text-red-500 text-center">Gagal memuat riwayat chat</p>';
                 }
             }
+
+            const clearChatHistory = document.getElementById('clearChatHistory');
+            clearChatHistory.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('/clear-chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
+                                .content
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        chatResponse.innerHTML = '';
+                    }
+                } catch (error) {
+                    console.error('Gagal menghapus riwayat chat:', error);
+                    appendMessage('ai', 'Gagal menghapus riwayat chat. Silakan coba lagi.');
+                }
+            });
 
             chatTrigger.addEventListener('click', () => {
                 chatModal.classList.remove('hidden');

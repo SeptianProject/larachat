@@ -19,4 +19,5 @@ Route::get('/', function () {
 });
 
 Route::post('/chat', [ChatController::class, 'sendMessage'])->name('chat.send');
-Route::get('/chat-history', [ChatController::class, 'chatHistory'])->name('chat.history');
+Route::get('/chat-history', [ChatController::class, 'createChatHistory'])->name('chat.history');
+Route::post('/clear-chat', [ChatController::class, 'clearChatHistory'])->name('chat.clear');

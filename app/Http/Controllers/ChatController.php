@@ -2,12 +2,34 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ChatHistory;
 use Illuminate\Http\Request;
 use Gemini\Laravel\Facades\Gemini;
+use Illuminate\Support\Facades\Session;
 
 class ChatController extends Controller
 {
+    private $commonInputs = [
+        'test',
+        'testing',
+        'tes',
+        'coba',
+        'hai',
+        'hello',
+        'hi',
+        'halo',
+        'ping',
+        'p',
+        'hei',
+        'hey',
+        'good morning',
+        'good afternoon',
+        'good evening',
+        'selamat pagi',
+        'selamat siang',
+        'selamat sore',
+        'selamat malam'
+    ];
+
     private $systemPrompt = "Anda adalah asisten AI yang ahli dalam manajemen dan pengelolaan sampah. " .
         "Fokus pada edukasi lingkungan, cara mendaur ulang, dan solusi pengelolaan sampah yang berkelanjutan. " .
         "Berikan jawaban yang informatif, ramah, dan mendidik.";
@@ -16,19 +38,30 @@ class ChatController extends Controller
     {
         $userMessage = $request->input('message');
 
-        // $fullPrompt = $systemPrompt . "\n\nPertanyaan Pengguna: " . $userMessage;
-        $previousChat = ChatHistory::latest()->take(3)->get();
+        // $previousChat = ChatHistory::latest()->take(3)->get();
 
-        $contextPrompt = $this->buildContextPrompt($previousChat, $userMessage);
+        $chatHistory = Session::get('chat_history', []);
+        $chatHistory = array_slice($chatHistory, -5);
+
+        $contextPrompt = $this->buildContextPrompt($chatHistory, $userMessage);
 
         try {
             $result = Gemini::geminiPro()->generateContent($contextPrompt);
 
-            ChatHistory::create([
+            // with db
+            // ChatHistory::create([
+            //     'user_message' => $userMessage,
+            //     'ai_response' => $result->text(),
+            //     'system_prompt' => $this->systemPrompt
+            // ]);
+
+            // with session
+            $chatHistory[] = [
                 'user_message' => $userMessage,
-                'ai_response' => $result->text(),
-                'system_prompt' => $this->systemPrompt
-            ]);
+                'ai_response' => $result->text()
+            ];
+
+            Session::put('chat_history', $chatHistory);
 
             return response()->json([
                 'success' => true,
@@ -42,12 +75,18 @@ class ChatController extends Controller
         }
     }
 
-    private function buildContextPrompt($previousChats, $newMessage)
+    private function buildContextPrompt($chatHistory, $newMessage)
     {
         $contextPrompt = $this->systemPrompt . "\n\nKonteks Percakapan Sebelumnya:\n";
-        foreach ($previousChats as $chat) {
-            $contextPrompt .= "- Pertanyaan: {$chat->user_message}\n";
-            $contextPrompt .= "  Jawaban: {$chat->ai_response}\n\n";
+
+        foreach ($chatHistory as $chat) {
+            // with db
+            // $contextPrompt .= "- Pertanyaan: {$chat->user_message}\n";
+            // $contextPrompt .= "  Jawaban: {$chat->ai_response}\n\n";
+
+            // with session
+            $contextPrompt .= "- Pertanyaan: {$chat['user_message']}\n";
+            $contextPrompt .= "  Jawaban: {$chat['ai_response']}\n\n";
         }
 
         $contextPrompt .= "Pertanyaan Terbaru: {$newMessage}\n";
@@ -56,10 +95,24 @@ class ChatController extends Controller
         return $contextPrompt;
     }
 
-    public function chatHistory()
+    public function createChatHistory()
     {
-        $chats = ChatHistory::latest()->take(20)->get();
+        // with db
+        // $chats = ChatHistory::latest()->take(20)->get();
 
-        return response()->json($chats);
+        // with session
+        $chatHistory = Session::get('chat_history', []);
+
+        return response()->json($chatHistory);
+    }
+
+    public function clearChatHistory()
+    {
+        Session::forget('chat_history');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Chat history berhasil dihapus'
+        ]);
     }
 }
