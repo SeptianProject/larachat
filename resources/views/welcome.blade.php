@@ -1,14 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Waste Management ChatBot</title>
+    <title>ChatBot</title>
     @vite('resources/css/app.css')
     <style>
-        /* Custom scrollbar */
         .chat-container::-webkit-scrollbar {
             width: 6px;
         }
@@ -20,171 +19,166 @@
     </style>
 </head>
 
-<body class="bg-gray-100">
-    <div class="flex h-screen">
-        <!-- Sidebar for Chat History -->
-        <div class="w-1/4 bg-white border-r border-gray-200 flex flex-col">
-            <div class="p-4 border-b">
-                <h2 class="text-xl font-bold text-gray-800">Waste Management</h2>
-                <p class="text-sm text-gray-500">AI Chat Assistant</p>
-            </div>
-
-            <!-- Chat History List -->
-            <div id="chatHistoryList" class="overflow-y-auto flex-1">
-                <!-- Chat history items will be dynamically populated here -->
-            </div>
+<body class="bg-dark min-h-[150vh]">
+    <div class="flex items-center justify-center h-screen">
+        <div class="text-center text-white">
+            <h1 class="text-4xl font-bold">Chatbot Laravel</h1>
         </div>
+    </div>
 
-        <!-- Main Chat Area -->
-        <div class="w-3/4 flex flex-col">
-            <!-- Chat Header -->
-            <div class="bg-white p-4 border-b flex items-center">
-                <div class="ml-3">
-                    <h3 class="font-bold text-lg">Waste Management AI</h3>
-                    <span class="text-sm text-green-500">Online</span>
+    <div class="fixed bottom-5 right-5 z-50">
+        <button id="chatTrigger" class="bg-primary size-full p-2 rounded-full">
+            <svg xmlns="http://www.w3.org/2000/svg" width="2em" height="2em" viewBox="0 0 24 24">
+                <g fill="white" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                    <path d="M12 8V4H8" />
+                    <rect width="16" height="12" x="4" y="8" rx="2" />
+                    <path d="M2 14h2m16 0h2m-7-1v2m-6-2v2" />
+                </g>
+            </svg>
+        </button>
+    </div>
+
+    <div id="chatModal" class="fixed inset-0 z-50 overflow-hidden {{ app('request')->is('/') ? 'hidden' : '' }}">
+        <div class="fixed right-5 bottom-20 bg-black bg-opacity-50 flex items-center justify-center">
+            <div class="bg-white w-96 max-h-[80vh] rounded-lg shadow-xl flex flex-col">
+                <!-- Header -->
+                <div class="flex justify-between items-center p-4 border-b">
+                    <h3 class="text-lg font-semibold text-gray-800">Waste Management AI</h3>
+                    <button id="closeModal" class="text-gray-500 hover:text-gray-800">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
-            </div>
 
-            <!-- Chat Messages Container -->
-            <div id="chatContainer" class="flex-1 overflow-y-auto p-4 chat-container bg-[#f0f2f5]">
-                <div id="chatMessages" class="space-y-4">
+                <!-- Chat Container -->
+                <div class="flex-1 overflow-y-auto p-4 space-y-4" id="chatResponse">
                     <!-- Chat messages will be dynamically added here -->
                 </div>
-            </div>
 
-            <!-- Message Input Area -->
-            <div class="bg-white p-4 border-t flex items-center">
-                <textarea id="chatInput" rows="1"
-                    class="w-full px-3 py-2 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Ketik pesan tentang sampah..."></textarea>
-                <button id="sendMessage"
-                    class="ml-2 bg-green-500 text-white p-2 rounded-full hover:bg-green-600 transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                    </svg>
-                </button>
+                <!-- Input Area -->
+                <div class="p-4 border-t">
+                    <textarea id="chatInput"
+                        class="w-full h-20 p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Tanya tentang pengelolaan sampah..."></textarea>
+                    <button id="sendMessage"
+                        class="mt-2 w-full bg-primary text-white py-2 rounded hover:bg-opacity-90 transition">
+                        Kirim Pesan
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const chatInput = document.getElementById('chatInput');
+            const chatTrigger = document.getElementById('chatTrigger');
+            const chatModal = document.getElementById('chatModal');
+            const closeModal = document.getElementById('closeModal');
             const sendMessage = document.getElementById('sendMessage');
-            const chatMessages = document.getElementById('chatMessages');
-            const chatContainer = document.getElementById('chatContainer');
+            const chatInput = document.getElementById('chatInput');
+            const chatResponse = document.getElementById('chatResponse');
 
-            // Auto-resize textarea
-            chatInput.addEventListener('input', function() {
-                this.style.height = 'auto';
-                this.style.height = (this.scrollHeight) + 'px';
-            });
-
-            // Send Message Function
-            async function sendChatMessage() {
-                const message = chatInput.value.trim();
-                if (!message) return;
-
-                // Add user message to chat
-                appendMessage('user', message);
-
-                // Disable input during sending
-                chatInput.value = '';
-                chatInput.style.height = 'auto';
-                sendMessage.disabled = true;
-
-                try {
-                    const response = await fetch('/chat', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                        },
-                        body: JSON.stringify({
-                            message: message
-                        })
-                    });
-
-                    const data = await response.json();
-
-                    if (data.success) {
-                        // Add AI response to chat
-                        appendMessage('ai', data.response);
-                    } else {
-                        appendMessage('ai', 'Maaf, terjadi kesalahan.');
-                    }
-                } catch (error) {
-                    appendMessage('ai', 'Gagal mengirim pesan. Coba lagi.');
-                } finally {
-                    sendMessage.disabled = false;
-                }
-            }
-
-            // Append Message to Chat
-            // Fungsi untuk menambahkan class dengan benar
+            // Fungsi untuk menambahkan pesan
             function appendMessage(sender, message) {
                 const messageElement = document.createElement('div');
-
-                // Gunakan classList.add untuk menambahkan class secara terpisah
                 messageElement.classList.add(
                     'max-w-xl',
                     'p-3',
                     'rounded-lg',
-                    'flex' // Tambahkan flex untuk kontrol layout
+                    'flex'
                 );
 
-                // Tambahkan class kondisional dengan benar
                 if (sender === 'user') {
                     messageElement.classList.add('bg-blue-100', 'self-end', 'ml-auto');
                 } else {
                     messageElement.classList.add('bg-white', 'self-start', 'mr-auto');
                 }
 
-                messageElement.innerHTML = `
-        <p class="${sender === 'user' ? 'text-blue-800' : 'text-gray-800'}">
-            ${message}
-        </p>
-    `;
+                messageElement.innerHTML =
+                    `<p class="${sender === 'user' ? 'text-blue-800' : 'text-gray-800'}">${message}</p>`;
 
-                chatMessages.appendChild(messageElement);
-
-                // Auto scroll to bottom
-                chatContainer.scrollTop = chatContainer.scrollHeight;
+                chatResponse.appendChild(messageElement);
+                chatResponse.scrollTop = chatResponse.scrollHeight;
             }
-            // Send message on button click
-            sendMessage.addEventListener('click', sendChatMessage);
 
-            // Send message on Enter key
-            chatInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendChatMessage();
-                }
-            });
-
-            // Load initial chat history
             async function loadChatHistory() {
                 try {
                     const response = await fetch('/chat-history');
                     const history = await response.json();
 
-                    // Clear existing messages
-                    chatMessages.innerHTML = '';
+                    chatResponse.innerHTML = '';
 
-                    // Add historical messages
                     history.forEach(chat => {
-                        appendMessage('user', chat.user_message);
-                        appendMessage('ai', chat.ai_response);
+                        if (chat.user_message) {
+                            appendMessage('user', chat.user_message);
+                        }
+                        if (chat.ai_response) {
+                            appendMessage('ai', chat.ai_response);
+                        }
                     });
                 } catch (error) {
                     console.error('Gagal memuat history:', error);
+                    chatResponse.innerHTML =
+                        '<p class="text-red-500 text-center">Gagal memuat riwayat chat</p>';
                 }
             }
 
-            // Load history when page loads
-            loadChatHistory();
+            chatTrigger.addEventListener('click', () => {
+                chatModal.classList.remove('hidden');
+                loadChatHistory();
+            });
+
+            closeModal.addEventListener('click', () => {
+                chatModal.classList.add('hidden');
+            });
+
+            sendMessage.addEventListener('click', async () => {
+                const message = chatInput.value.trim();
+
+                if (message) {
+                    appendMessage('user', message);
+                    sendMessage.disabled = true;
+                    sendMessage.textContent = 'Mengirim...';
+
+                    try {
+                        const response = await fetch('/chat', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector(
+                                    'meta[name="csrf-token"]').content
+                            },
+                            body: JSON.stringify({
+                                message: message
+                            })
+                        });
+
+                        const data = await response.json();
+
+                        if (data.success) {
+                            appendMessage('ai', data.response);
+                        } else {
+                            appendMessage('ai', 'Maaf, terjadi kesalahan.');
+                        }
+                    } catch (error) {
+                        appendMessage('ai', 'Gagal mengirim pesan. Coba lagi.');
+                    } finally {
+                        sendMessage.disabled = false
+                        sendMessage.textContent = 'Kirim Pesan'
+                        chatInput.value = ''
+                    }
+                }
+            });
+
+            chatInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    sendMessage.click()
+                }
+            });
         });
     </script>
 </body>

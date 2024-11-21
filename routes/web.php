@@ -19,5 +19,4 @@ Route::get('/', function () {
 });
 
 Route::post('/chat', [ChatController::class, 'sendMessage'])->name('chat.send');
-// routes/web.php
 Route::get('/chat-history', [ChatController::class, 'chatHistory'])->name('chat.history');
