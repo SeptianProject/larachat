@@ -19,7 +19,7 @@
     </style>
 </head>
 
-<body class="bg-dark min-h-[150vh]">
+<body class="bg-dark min-h-screen">
     <div class="flex items-center justify-center h-screen">
         <div class="text-center text-white">
             <h1 class="text-4xl font-bold">Chatbot Laravel</h1>
