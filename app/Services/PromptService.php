@@ -58,7 +58,7 @@ PANDUAN INTERAKSI:
 Jika ada pertanyaan di luar konteks SIPS dan pengelolaan sampah, Eko akan mengarahkan kembali ke topik utama dengan ramah.";
      }
 
-     public static function getCommonResponse(): array
+     public static function getCommonResponses(): array
      {
           return [
                'morning' => [
@@ -89,14 +89,27 @@ Jika ada pertanyaan di luar konteks SIPS dan pengelolaan sampah, Eko akan mengar
           ];
      }
 
-     public static function getCommontInputs(): array
+     public static function getCommonInputs(): array
      {
           return [
-               'morning' => ['pagi', 'morning', 'selamat pagi'],
-               'afternoon' => ['siang', 'afternoon', 'selamat siang'],
-               'evening' => ['sore', 'evening', 'selamat sore'],
-               'night' => ['malam', 'night', 'selamat malam'],
-               'general' => ['hai', 'hi', 'halo', 'hello', 'salam', 'p', 'tes', 'test']
+               'test',
+               'testing',
+               'tes',
+               'coba',
+               'hai',
+               'hello',
+               'hi',
+               'halo',
+               'p',
+               'hei',
+               'hey',
+               'good morning',
+               'good afternoon',
+               'good evening',
+               'selamat pagi',
+               'selamat siang',
+               'selamat sore',
+               'selamat malam'
           ];
      }
 }
